@@ -9,11 +9,11 @@ import random
 
 ssl._create_default_https_context = ssl._create_unverified_context
 session = requests.session()
-headers = {'Cookie': 'aliyungf_tc=AQAAAJ+82SAg0QYAMkb43Ehcyxz0vsrD;l_n_c=1;q_c1=597b00e142e64da6a9db36ff16210450|1506666151000|1506666151000; r_cap_id="YzQ0NjExYzYzODZmNGQwNzgwYjk1MzM3NGJhNGVlYmE=|1506666151|357bc144d9e4eb157374079132a0cdee74b6a029"; cap_id="MjAyNzYyY2Y5YmYxNDdhYWIzMGMyZjBkNDdlOWM2OTk=|1506666151|a405bd565a0584d60ca8d16f45dd696491edd837"; z_c0="MS4xeWs1REFnQUFBQUFYQUFBQVlRSlZUYk56OVZuUDJJSVBrNy1kQ0hRRy1BdGtpdk9mREwyNlFBPT0=|1506666163|85d44d27f66d8fcaec382bb130e5fada0f38c3a5"',
+headers = {'Cookie': '添加自己的cookie在此处',
            'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:55.0) Gecko/20100101 Firefox/55.0',
            'Accept': 'application/json, text/plain, */*'}
 
-
+# 连接redis配置
 def toRedis():
     pool = redis.ConnectionPool(host='127.0.0.1', port=6379)
     r = redis.Redis(connection_pool=pool)
@@ -22,9 +22,6 @@ def toRedis():
 
 
 def zhizhu():
-    headers = {'Cookie': 'aliyungf_tc=AQAAAJ+82SAg0QYAMkb43Ehcyxz0vsrD; l_n_c=1; q_c1=597b00e142e64da6a9db36ff16210450|1506666151000|1506666151000; r_cap_id="YzQ0NjExYzYzODZmNGQwNzgwYjk1MzM3NGJhNGVlYmE=|1506666151|357bc144d9e4eb157374079132a0cdee74b6a029"; cap_id="MjAyNzYyY2Y5YmYxNDdhYWIzMGMyZjBkNDdlOWM2OTk=|1506666151|a405bd565a0584d60ca8d16f45dd696491edd837"; z_c0="MS4xeWs1REFnQUFBQUFYQUFBQVlRSlZUYk56OVZuUDJJSVBrNy1kQ0hRRy1BdGtpdk9mREwyNlFBPT0=|1506666163|85d44d27f66d8fcaec382bb130e5fada0f38c3a5"',
-               'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:55.0) Gecko/20100101F irefox/55.0',
-               'Accept': 'application/json, text/plain, */*'}
     url = 'https://www.zhihu.com/'
     rs = session.get(url, headers=headers)
     s = session.get(
@@ -82,7 +79,7 @@ def paraser(pageNo):
     except IndexError:
         pass
 
-
+# 爬取自己的关注人
 def urlIteration(r):
     url_tokens = r.smembers('url_token_1')
     for userurl_token in url_tokens:
@@ -136,7 +133,8 @@ def urlIteration(r):
             pass
         session.close()
         r.srem('url_token_1',userurl_token)
-
+           
+# 爬取外围关注人
 def action(arg, r):
      while r.scard('url_token_1') > 0:
         userurl_token = r.spop('url_token_1')
@@ -183,6 +181,7 @@ def action(arg, r):
                         r.sadd('url_token', url_token)
                         r.sadd('url_token_1', url_token)
                     print(r.get(ids).decode('utf-8'))
+                #设置请求间隔时间，防止            
                 time.sleep(random.randint(10,30))
                 offset = offset + 20
         except (IndexError,Exception) as e:
@@ -196,11 +195,10 @@ def action(arg, r):
             session.close()
 
 if __name__ == '__main__':
-    # soup = BeautifulSoup(open('html/user.html',encoding='utf-8'))
-    # print(len(soup.select('.Pagination button')))
     r = toRedis()
-    # paraser(6)
-    # urlIteration(r)
+    paraser(6)
+    urlIteration(r)
+    #设置线程数 
     for i in range(2):
         t = threading.Thread(target=action, args=(i, r))
         t.start()
