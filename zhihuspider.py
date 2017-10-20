@@ -20,7 +20,7 @@ def toRedis():
     print('--------------redis connection success-----------')
     return r
 
-
+# 爬取当前用户关注列表
 def zhizhu():
     url = 'https://www.zhihu.com/'
     rs = session.get(url, headers=headers)
@@ -50,7 +50,7 @@ def zhizhu():
         time.sleep(1)
         offset = offset + 20
 
-
+# 解析后写入redis队列
 def paraser(pageNo):
     try:
         for x in range(1, pageNo):
@@ -79,7 +79,7 @@ def paraser(pageNo):
     except IndexError:
         pass
 
-# 爬取自己的关注人
+# 单线程爬取用户信息
 def urlIteration(r):
     url_tokens = r.smembers('url_token_1')
     for userurl_token in url_tokens:
@@ -134,7 +134,7 @@ def urlIteration(r):
         session.close()
         r.srem('url_token_1',userurl_token)
            
-# 爬取外围关注人
+# 多线程爬取用户信息
 def action(arg, r):
      while r.scard('url_token_1') > 0:
         userurl_token = r.spop('url_token_1')
@@ -181,7 +181,7 @@ def action(arg, r):
                         r.sadd('url_token', url_token)
                         r.sadd('url_token_1', url_token)
                     print(r.get(ids).decode('utf-8'))
-                #设置请求间隔时间，防止            
+                #设置请求间隔时间，防反爬            
                 time.sleep(random.randint(10,30))
                 offset = offset + 20
         except (IndexError,Exception) as e:
@@ -197,8 +197,9 @@ def action(arg, r):
 if __name__ == '__main__':
     r = toRedis()
     paraser(6)
+    #单线程抓取          
     urlIteration(r)
-    #设置线程数 
+    #设置线程数，多线程抓取
     for i in range(2):
         t = threading.Thread(target=action, args=(i, r))
         t.start()
